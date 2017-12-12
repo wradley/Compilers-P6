@@ -6,11 +6,24 @@ import java.util.*;
  */
 public class SemSym {
     private Type type;
+    private int offset;
     
     public SemSym(Type type) {
         this.type = type;
     }
     
+    // May be used if more simple then setting the offset
+    public SemSym(Type type, int s) {
+    	this.type = type;
+    	this.offset = s;
+    }
+    
+    public void setOffset(int s) {
+    	offset = s;
+    }
+    public int getOffset() {
+    	return offset;
+    }
     public Type getType() {
         return type;
     }

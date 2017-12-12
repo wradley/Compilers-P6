@@ -106,6 +106,10 @@ import java.util.*;
 // **********************************************************************
 
 abstract class ASTnode { 
+	
+	protected boolean hasMain = false; // program has main function
+	protected int curOffset = 4;
+	
     // every subclass must provide an unparse operation
     abstract public void unparse(PrintWriter p, int indent);
 
@@ -121,6 +125,7 @@ abstract class ASTnode {
 // **********************************************************************
 
 class ProgramNode extends ASTnode {
+	
     public ProgramNode(DeclListNode L) {
         myDeclList = L;
     }
@@ -140,6 +145,16 @@ class ProgramNode extends ASTnode {
      */
     public void typeCheck() {
         myDeclList.typeCheck();
+    }
+    
+    public void codeGen() {
+    	
+    	// Make sure program has main function
+    	if(hasMain == false) {
+    		ErrMsg.fatal(0, 0, "No main function");
+    	}
+    	
+    	
     }
     
     public void unparse(PrintWriter p, int indent) {
@@ -176,7 +191,7 @@ class DeclListNode extends ASTnode {
             } else {
                 node.nameAnalysis(symTab);
             }
-        }
+       }
     }    
     
     /**
@@ -218,12 +233,16 @@ class FormalsListNode extends ASTnode {
      */
     public List<Type> nameAnalysis(SymTable symTab) {
         List<Type> typeList = new LinkedList<Type>();
+        int i = 1; 
         for (FormalDeclNode node : myFormals) {
             SemSym sym = node.nameAnalysis(symTab);
             if (sym != null) {
+            	sym.setOffset(i * 4); // can we assume all params will be variables of size 4?
                 typeList.add(sym.getType());
             }
+            i++;
         }
+        
         return typeList;
     }    
     
@@ -491,7 +510,7 @@ class VarDeclNode extends DeclNode {
 }
 
 class FnDeclNode extends DeclNode {
-    public FnDeclNode(TypeNode type,
+	public FnDeclNode(TypeNode type,
                       IdNode id,
                       FormalsListNode formalList,
                       FnBodyNode body) {
@@ -526,6 +545,9 @@ class FnDeclNode extends DeclNode {
         else { // add function name to local symbol table
             try {
                 sym = new FnSym(myType.type(), myFormalsList.length());
+                if(name.equals("main")) {
+                	hasMain = true;
+                }
                 symTab.addDecl(name, sym);
                 myId.link(sym);
             } catch (DuplicateSymException ex) {
@@ -592,6 +614,7 @@ class FormalDeclNode extends DeclNode {
         myId = id;
     }
 
+
     /**
      * nameAnalysis
      * Given a symbol table symTab, do:
@@ -645,6 +668,7 @@ class FormalDeclNode extends DeclNode {
     // 2 kids
     private TypeNode myType;
     private IdNode myId;
+	
 }
 
 class StructDeclNode extends DeclNode {

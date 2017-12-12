@@ -2,10 +2,12 @@ import java.util.*;
 
 public class SymTable {
     private List<HashMap<String, SemSym>> list;
+    private int curScope;
     
     public SymTable() {
         list = new LinkedList<HashMap<String, SemSym>>();
         list.add(new HashMap<String, SemSym>());
+        curScope = 0;
     }
     
     public void addDecl(String name, SemSym sym) 
@@ -25,6 +27,7 @@ public class SymTable {
     
     public void addScope() {
         list.add(0, new HashMap<String, SemSym>());
+        curScope++;
     }
     
     public SemSym lookupLocal(String name) {
@@ -51,6 +54,11 @@ public class SymTable {
         if (list.isEmpty())
             throw new EmptySymTableException();
         list.remove(0);
+        curScope--;
+    }
+    
+    public int getScopeLevel() {
+    	return curScope;
     }
     
     public void print() {
