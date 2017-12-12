@@ -107,7 +107,7 @@ import java.util.*;
 
 abstract class ASTnode { 
 	
-	protected boolean hasMain = false; // program has main function
+	static boolean hasMain = false; // program has main function
 	protected int curOffset = 4;
 	
     // every subclass must provide an unparse operation
@@ -194,8 +194,10 @@ class DeclListNode extends ASTnode {
                 if(symTab.getScopeLevel() == 0) {
                 	sym.setOffset(0); // global variables have offset of 0
                 }
-                sym.setOffset(i * -4);
-                i++;
+                else { 
+                    sym.setOffset(i * -4);
+                    i++;
+                }
             } else {
                 node.nameAnalysis(symTab);
             }
@@ -514,7 +516,7 @@ class VarDeclNode extends DeclNode {
     	if(myId.sym().getOffset() == 0) {
     		Codegen.generate(".data");
     		Codegen.generate(".align 2");
-    		Codegen.p.write("_" + myId.name() + ": .space 4");
+    		Codegen.p.write("_" + myId.name() + ": .space 4\n");
     	}
     }
     
@@ -614,6 +616,21 @@ class FnDeclNode extends DeclNode {
      */
     public void typeCheck() {
         myBody.typeCheck(myType.type());
+    }
+    
+    public void codeGen() {
+        Codegen.generate(".text");
+        
+        if (myId.name().equals("main")) 
+        {
+            Codegen.generate(".globl main");
+            Codegen.genLabel("main");
+            Codegen.genLabel("__start");
+        }
+        
+        else {
+            Codegen.genLabel("_" + myId.name());
+        }
     }
         
     public void unparse(PrintWriter p, int indent) {
