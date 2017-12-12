@@ -57,7 +57,6 @@ EmptySymTableException.class: EmptySymTableException.java
 #
 test:
 	java $(FLAGS) P5 test.cimple test.out
-	java $(FLAGS) P5 typeErrors.cimple errors.out
 
 ###
 # clean

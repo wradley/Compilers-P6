@@ -154,6 +154,8 @@ class ProgramNode extends ASTnode {
     		ErrMsg.fatal(0, 0, "No main function");
     	}
     	
+    	myDeclList.codeGen();
+    	
     	
     }
     
@@ -185,9 +187,15 @@ class DeclListNode extends ASTnode {
      * decls in the list.
      */    
     public void nameAnalysis(SymTable symTab, SymTable globalTab) {
+    	int i = 2;
         for (DeclNode node : myDecls) {
             if (node instanceof VarDeclNode) {
-                ((VarDeclNode)node).nameAnalysis(symTab, globalTab);
+                SemSym sym = ((VarDeclNode)node).nameAnalysis(symTab, globalTab);
+                if(symTab.getScopeLevel() == 0) {
+                	sym.setOffset(0); // global variables have offset of 0
+                }
+                sym.setOffset(i * -4);
+                i++;
             } else {
                 node.nameAnalysis(symTab);
             }
@@ -200,6 +208,12 @@ class DeclListNode extends ASTnode {
     public void typeCheck() {
         for (DeclNode node : myDecls) {
             node.typeCheck();
+        }
+    }
+    
+    public void codeGen() {
+    	for (DeclNode node : myDecls) {
+            node.codeGen();
         }
     }
     
@@ -237,7 +251,7 @@ class FormalsListNode extends ASTnode {
         for (FormalDeclNode node : myFormals) {
             SemSym sym = node.nameAnalysis(symTab);
             if (sym != null) {
-            	sym.setOffset(i * 4); // can we assume all params will be variables of size 4?
+            	sym.setOffset(i * 4); 
                 typeList.add(sym.getType());
             }
             i++;
@@ -407,6 +421,7 @@ abstract class DeclNode extends ASTnode {
 
     // default version of typeCheck for non-function decls
     public void typeCheck() { }
+    public void codeGen() { }
 }
 
 class VarDeclNode extends DeclNode {
@@ -493,6 +508,16 @@ class VarDeclNode extends DeclNode {
         return sym;
     }    
     
+    // Assuming no structs in input
+    public void codeGen() {
+    	// Global variable
+    	if(myId.sym().getOffset() == 0) {
+    		Codegen.generate(".data");
+    		Codegen.generate(".align 2");
+    		Codegen.p.write("_" + myId.name() + ": .space 4");
+    	}
+    }
+    
     public void unparse(PrintWriter p, int indent) {
         doIndent(p, indent);
         myType.unparse(p, 0);
@@ -565,8 +590,10 @@ class FnDeclNode extends DeclNode {
         
         // process the formals
         List<Type> typeList = myFormalsList.nameAnalysis(symTab);
+        int totalSize = typeList.size() * 4;
         if (sym != null) {
             sym.addFormals(typeList);
+            sym.setTotalSize(totalSize);
         }
         
         myBody.nameAnalysis(symTab); // process the function body
@@ -991,24 +1018,24 @@ class WriteStmtNode extends StmtNode {
      * typeCheck
      */
     public void typeCheck(Type retType) {
-        Type type = myExp.typeCheck();
+        expType = myExp.typeCheck();
         
-        if (type.isFnType()) {
+        if (expType.isFnType()) {
             ErrMsg.fatal(myExp.lineNum(), myExp.charNum(),
                          "Attempt to write a function");
         }
         
-        if (type.isStructDefType()) {
+        if (expType.isStructDefType()) {
             ErrMsg.fatal(myExp.lineNum(), myExp.charNum(),
                          "Attempt to write a struct name");
         }
         
-        if (type.isStructType()) {
+        if (expType.isStructType()) {
             ErrMsg.fatal(myExp.lineNum(), myExp.charNum(),
                          "Attempt to write a struct variable");
         }
         
-        if (type.isVoidType()) {
+        if (expType.isVoidType()) {
             ErrMsg.fatal(myExp.lineNum(), myExp.charNum(),
                          "Attempt to write void");
         }
@@ -1023,6 +1050,7 @@ class WriteStmtNode extends StmtNode {
 
     // 1 kid
     private ExpNode myExp;
+    private Type expType;
 }
 
 class IfStmtNode extends StmtNode {
@@ -1550,6 +1578,7 @@ class IdNode extends ExpNode {
     public void unparse(PrintWriter p, int indent) {
         p.print(myStrVal);
         if (mySym != null) {
+        	p.print(mySym.getOffset());
             p.print("(" + mySym + ")");
         }
     }

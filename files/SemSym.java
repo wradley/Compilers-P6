@@ -6,7 +6,7 @@ import java.util.*;
  */
 public class SemSym {
     private Type type;
-    private int offset;
+    private int offset; // offset of 0 is for globals
     
     public SemSym(Type type) {
         this.type = type;
@@ -43,6 +43,7 @@ class FnSym extends SemSym {
     private Type returnType;
     private int numParams;
     private List<Type> paramTypes;
+    private int totalSize;
     
     public FnSym(Type type, int numparams) {
         super(new FnType());
@@ -66,6 +67,20 @@ class FnSym extends SemSym {
         return paramTypes;
     }
 
+    // Total size of functions PARAMETERS
+    public int getParamSize() {
+    	// Check for debugging purposes
+    	if(paramTypes == null) {
+    		System.out.println("Formals have not yet been added.");
+    		return 0;
+    	}
+    	int count = 0;
+    	for(int i = 0; i < paramTypes.size(); i++) {
+    		count+=4;
+    	}
+    	return count;
+    }
+    
     public String toString() {
         // make list of formals
         String str = "";
@@ -81,6 +96,12 @@ class FnSym extends SemSym {
         str += "->" + returnType.toString();
         return str;
     }
+
+    // Total size of functions LOCAL variables
+	public void setTotalSize(int ts) {
+		totalSize = ts;
+		
+	}
 }
 
 /**
