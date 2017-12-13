@@ -1,6 +1,10 @@
-bool harryPotterIsPrettyDope;
-int hfhfhfhfh;
+int globalInt;
+bool globalBool;
 
 void main()
 {
+    int z;
+    z = 12;
+    globalInt = 2;
+    globalBool = false;
 }

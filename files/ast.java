@@ -107,6 +107,8 @@ import java.util.*;
 
 abstract class ASTnode { 
 	
+	static HashTable<String, String> myStringLits = new HashTable<String, String>();
+	
 	static boolean hasMain = false; // program has main function
 	protected int curOffset = 4;
 	
@@ -307,6 +309,11 @@ class FnBodyNode extends ASTnode {
     public void typeCheck(Type retType) {
         myStmtList.typeCheck(retType);
     }    
+    
+    public void codeGen()
+    {
+        myStmtList.codeGen();
+    }
           
     public void unparse(PrintWriter p, int indent) {
         myDeclList.unparse(p, indent);
@@ -628,6 +635,7 @@ class FnDeclNode extends DeclNode {
     	
         Codegen.generate(".text");
         
+        // if this is the main function (special case)
         if (myId.name().equals("main")) 
         {
         	// Main preamble
@@ -636,14 +644,17 @@ class FnDeclNode extends DeclNode {
             Codegen.genLabel("__start");
             
             // Entering Main
+            Codegen.p.write("\t\t# Entering Main\n");
             Codegen.genPush(Codegen.RA);
             Codegen.genPush(Codegen.FP);
             Codegen.generate("addu", Codegen.FP, Codegen.SP, 8);
             Codegen.generate("subu", Codegen.SP, Codegen.SP, ((FnSym)myId.sym()).getTotalSize());
-            
-            //myBody.codeGen();
+
+            Codegen.p.write("\t\t# Main Body\n");
+            myBody.codeGen();
             
             // Exiting main
+            Codegen.p.write("\t\t# Exiting Main\n");
             Codegen.generateIndexed("lw", Codegen.RA, Codegen.FP, 0);
             Codegen.generate("move", Codegen.T0, Codegen.FP);
             Codegen.generateIndexed("lw", Codegen.FP, Codegen.FP, -4);
@@ -653,6 +664,7 @@ class FnDeclNode extends DeclNode {
             Codegen.generate("syscall");
         }
         
+        // for any other function
         else {
             Codegen.genLabel("_" + myId.name());
         } 
@@ -789,7 +801,7 @@ class StructDeclNode extends DeclNode {
         }
         
         return null;
-    }    
+    }
     
     public void unparse(PrintWriter p, int indent) {
         doIndent(p, indent);
@@ -1503,7 +1515,8 @@ class IntLitNode extends ExpNode {
     }
     
     public void codeGen() {
-    	Codegen.genPush(String.valueOf(myIntVal));
+        Codegen.generate("li", Codegen.T0, myIntVal);
+    	Codegen.genPush(Codegen.T0);
     }
     public void unparse(PrintWriter p, int indent) {
         p.print(myIntVal);
@@ -1543,7 +1556,24 @@ class StringLitNode extends ExpNode {
     }
         
     public void codeGen() {
-    	Codegen.genPush(myStrVal);
+    	String myLabel;
+    	
+    	if (myStringList.get(myStrVal) != null) {
+    	    myLabel = myStringList.get(myStrVal);
+    	}
+    	
+    	else {
+    	    myLabel = Codegen.nextLabel();
+    	    myStringList.put(myStrVal, myLabel);
+    	}
+    	
+    	Codegen.generate(".data");
+    	Codegen.generateLabeled(myLabel, ".asciiz", "Storing a string literal", myStrVal);
+    	
+    	Codegen.generate(".text");
+    	Codegen.generateWithComment("la", Codegen.T0, myLabel, "Pushing address of string literal on the stack");
+    	Codegen.genPush(Codegen.T0);
+    	
     }
     
     public void unparse(PrintWriter p, int indent) {
@@ -1584,7 +1614,8 @@ class TrueNode extends ExpNode {
     
     public void codeGen() {
     	// Push 1 for true
-    	Codegen.genPush(String.valueOf(1));
+    	Codegen.generate("li", Codegen.T0, 1);
+    	Codegen.genPush(Codegen.T0);
     }
     
     public void unparse(PrintWriter p, int indent) {
@@ -1623,8 +1654,9 @@ class FalseNode extends ExpNode {
     }
         
     public void codeGen() {
-    	// Push 0 for false
-    	Codegen.genPush(String.valueOf(0));
+        // zero means false in computer
+    	Codegen.generate("li", Codegen.T0, 0);
+    	Codegen.genPush(Codegen.T0);
     }
     
     public void unparse(PrintWriter p, int indent) {
@@ -1976,13 +2008,15 @@ class AssignNode extends ExpNode {
     }
     
     public void codeGen() {
+        Codegen.p.write("\t\t# Assignment Start\n");
     	((IdNode)myLhs).genAddr(); // can assume LHS is IdNode variable
     	myExp.codeGen();
     	Codegen.genPop(Codegen.T1);
     	Codegen.genPop(Codegen.T0);
     	// Not quite sure if this works
     	// Desired assembly: sw T0 (T1)
-    	Codegen.generateIndexed("sw", Codegen.T1, Codegen.T0, 0);
+    	Codegen.generateIndexed("sw", Codegen.T1, Codegen.T0, 0, "kyles blunder");
+    	Codegen.p.write("\t\t# Assignment Start\n");
     }
     
     public void unparse(PrintWriter p, int indent) {
