@@ -619,18 +619,38 @@ class FnDeclNode extends DeclNode {
     }
     
     public void codeGen() {
+    	
         Codegen.generate(".text");
         
         if (myId.name().equals("main")) 
         {
+        	// Main preamble
             Codegen.generate(".globl main");
             Codegen.genLabel("main");
             Codegen.genLabel("__start");
+            
+            // Entering Main
+            Codegen.genPush(Codegen.RA);
+            Codegen.genPush(Codegen.FP);
+            Codegen.generate("addu", Codegen.FP, Codegen.SP, 8);
+            Codegen.generate("subu", Codegen.SP, Codegen.SP, ((FnSym)myId.sym()).getTotalSize());
+            
+            //myBody.codeGen();
+            
+            // Exiting main
+            Codegen.generateIndexed("lw", Codegen.RA, Codegen.FP, 0);
+            Codegen.generate("move", Codegen.T0, Codegen.FP);
+            Codegen.generateIndexed("lw", Codegen.FP, Codegen.FP, -4);
+            Codegen.generate("move", Codegen.SP, Codegen.T0);
+            //Codegen.generate("jr", Codegen.RA);
+            Codegen.generate("li", Codegen.V0, 10);
+            Codegen.generate("syscall");
         }
         
         else {
             Codegen.genLabel("_" + myId.name());
-        }
+        } 
+        
     }
         
     public void unparse(PrintWriter p, int indent) {

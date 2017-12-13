@@ -100,7 +100,10 @@ class FnSym extends SemSym {
     // Total size of functions LOCAL variables
 	public void setTotalSize(int ts) {
 		totalSize = ts;
-		
+	}
+	
+	public int getTotalSize() {
+		return totalSize;
 	}
 }
 
