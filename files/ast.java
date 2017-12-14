@@ -107,7 +107,7 @@ import java.util.*;
 
 abstract class ASTnode { 
 	
-	static HashTable<String, String> myStringLits = new HashTable<String, String>();
+	static Hashtable<String, String> myStringLits = new Hashtable<String, String>();
 	
 	static boolean hasMain = false; // program has main function
 	protected int curOffset = 4;
@@ -179,7 +179,15 @@ class DeclListNode extends ASTnode {
      * Given a symbol table symTab, process all of the decls in the list.
      */
     public void nameAnalysis(SymTable symTab) {
-        nameAnalysis(symTab, symTab);
+        nameAnalysis(symTab, symTab, null);
+    }
+    
+    public void nameAnalysis(SymTable symTab, SymTable globalTab) {
+        nameAnalysis(symTab, globalTab, null);
+    }
+    
+    public void nameAnalysis(SymTable symTab, IdNode myId) {
+        nameAnalysis(symTab, symTab, myId);
     }
     
     /**
@@ -188,7 +196,7 @@ class DeclListNode extends ASTnode {
      * (for processing struct names in variable decls), process all of the 
      * decls in the list.
      */    
-    public void nameAnalysis(SymTable symTab, SymTable globalTab) {
+    public void nameAnalysis(SymTable symTab, SymTable globalTab, IdNode myId) {
     	int i = 2;
         for (DeclNode node : myDecls) {
             if (node instanceof VarDeclNode) {
@@ -203,6 +211,9 @@ class DeclListNode extends ASTnode {
             } else {
                 node.nameAnalysis(symTab);
             }
+       }
+       if(myId != null) {
+    	   ((FnSym)myId.sym()).setTotalSize((i-1)*4);
        }
     }    
     
@@ -297,9 +308,10 @@ class FnBodyNode extends ASTnode {
      * Given a symbol table symTab, do:
      * - process the declaration list
      * - process the statement list
+     * @param myId 
      */
-    public void nameAnalysis(SymTable symTab) {
-        myDeclList.nameAnalysis(symTab);
+    public void nameAnalysis(SymTable symTab, IdNode myId) {
+        myDeclList.nameAnalysis(symTab, myId);
         myStmtList.nameAnalysis(symTab);
     }    
  
@@ -605,13 +617,12 @@ class FnDeclNode extends DeclNode {
         
         // process the formals
         List<Type> typeList = myFormalsList.nameAnalysis(symTab);
-        int totalSize = typeList.size() * 4;
+
         if (sym != null) {
             sym.addFormals(typeList);
-            sym.setTotalSize(totalSize);
         }
         
-        myBody.nameAnalysis(symTab); // process the function body
+        myBody.nameAnalysis(symTab, myId); // process the function body
         
         try {
             symTab.removeScope();  // exit scope
@@ -1116,9 +1127,11 @@ class WriteStmtNode extends StmtNode {
     	myExp.codeGen();
     	Codegen.genPop(Codegen.A0);
     	if(expType.isIntType()) {
-    		Codegen.generate("li", Codegen.V0, 1);
+		Codegen.p.write("#Syscall for writing ints\n");
+    		Codegen.generate("li",Codegen.V0, 1);
     	}
     	if(expType.isStringType()) {
+		Codegen.p.write("#Syscall for writing strings\n");
     		Codegen.generate("li", Codegen.V0, 4);
     	}
     	Codegen.generate("syscall");
@@ -1558,20 +1571,20 @@ class StringLitNode extends ExpNode {
     public void codeGen() {
     	String myLabel;
     	
-    	if (myStringList.get(myStrVal) != null) {
-    	    myLabel = myStringList.get(myStrVal);
+    	if (myStringLits.get(myStrVal) != null) {
+    	    myLabel = myStringLits.get(myStrVal);
     	}
     	
     	else {
     	    myLabel = Codegen.nextLabel();
-    	    myStringList.put(myStrVal, myLabel);
+    	    myStringLits.put(myStrVal, myLabel);
     	}
     	
     	Codegen.generate(".data");
     	Codegen.generateLabeled(myLabel, ".asciiz", "Storing a string literal", myStrVal);
     	
     	Codegen.generate(".text");
-    	Codegen.generateWithComment("la", Codegen.T0, myLabel, "Pushing address of string literal on the stack");
+    	Codegen.generateWithComment("la", "Pushing address of string literal on the stack", Codegen.T0, myLabel);
     	Codegen.genPush(Codegen.T0);
     	
     }
@@ -2015,8 +2028,8 @@ class AssignNode extends ExpNode {
     	Codegen.genPop(Codegen.T0);
     	// Not quite sure if this works
     	// Desired assembly: sw T0 (T1)
-    	Codegen.generateIndexed("sw", Codegen.T1, Codegen.T0, 0, "kyles blunder");
-    	Codegen.p.write("\t\t# Assignment Start\n");
+    	Codegen.generateIndexed("sw", Codegen.T1, Codegen.T0, 0, "Storing RHS value in LHS address");
+    	Codegen.p.write("\t\t# Assignment End\n");
     }
     
     public void unparse(PrintWriter p, int indent) {

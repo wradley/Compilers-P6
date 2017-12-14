@@ -1,10 +1,23 @@
 int globalInt;
+int globalInt2;
 bool globalBool;
 
 void main()
 {
     int z;
-    z = 12;
-    globalInt = 2;
-    globalBool = false;
+    int x;
+    z = 53;
+    x = 17;
+    globalInt = 2001;
+    globalInt2 = 5555;
+    globalBool = true;
+
+       // cout << globalInt;
+       // cout << globalInt2;
+       // cout << globalInt;
+        cout << x;
+        cout << z;
+       // cout << "Whelan needs to use eclipse cuz he sucks at coding\n";
+
+    
 }
