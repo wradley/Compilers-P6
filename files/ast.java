@@ -659,6 +659,7 @@ class FnDeclNode extends DeclNode {
             Codegen.genPush(Codegen.RA);
             Codegen.genPush(Codegen.FP);
             Codegen.generate("addu", Codegen.FP, Codegen.SP, 8);
+	    System.out.println(((FnSym)myId.sym()).getTotalSize());
             Codegen.generate("subu", Codegen.SP, Codegen.SP, ((FnSym)myId.sym()).getTotalSize());
 
             Codegen.p.write("\t\t# Main Body\n");
@@ -2228,7 +2229,12 @@ class UnaryMinusNode extends UnaryExpNode {
     }
     
     public void codeGen() {
-    	//TODO
+    	myExp.codeGen();
+    	Codegen.genPop(Codegen.T0);
+    	Codegen.generate("li", Codegen.T1, -1);
+    	Codegen.generate("mult", Codegen.T1, Codegen.T0);
+    	Codegen.generate("mflo", Codegen.T0);
+    	Codegen.genPush(Codegen.T0);
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -2264,7 +2270,14 @@ class NotNode extends UnaryExpNode {
     }
 
     public void codeGen() {
-    	//TODO
+    	myExp.codeGen();
+    	Codegen.genPop(Codegen.T0);
+    	Codegen.p.write("\t\t# Not Node\n");
+    	Codegen.generate("li", Codegen.T1, -1);
+    	Codegen.generate("add", Codegen.T0, Codegen.T0, Codegen.T1);
+    	Codegen.generate("mult", Codegen.T0, Codegen.T1);
+    	Codegen.generate("mflo", Codegen.T0);
+    	Codegen.genPush(Codegen.T0);
     }
     
     public void unparse(PrintWriter p, int indent) {
@@ -2434,7 +2447,13 @@ class PlusNode extends ArithmeticExpNode {
     }
     
     public void codeGen() {
-    	//TODO
+    	Codegen.p.write("\t\t# Adding ints\n");
+    	myExp1.codeGen();
+    	myExp2.codeGen();
+    	Codegen.genPop(Codegen.T1);
+    	Codegen.genPop(Codegen.T0);
+    	Codegen.generate("add", Codegen.T0, Codegen.T0, Codegen.T1);
+    	Codegen.genPush(Codegen.T0);
     }
     
     public void unparse(PrintWriter p, int indent) {
@@ -2454,7 +2473,13 @@ class MinusNode extends ArithmeticExpNode {
     }
     
     public void codeGen() {
-    	//TODO
+    	Codegen.p.write("\t\t# Subtracting ints\n");
+    	myExp1.codeGen();
+    	myExp2.codeGen();
+    	Codegen.genPop(Codegen.T1);
+    	Codegen.genPop(Codegen.T0);
+    	Codegen.generate("sub", Codegen.T0, Codegen.T0, Codegen.T1);
+    	Codegen.genPush(Codegen.T0);
     }
     
     public void unparse(PrintWriter p, int indent) {
@@ -2472,7 +2497,14 @@ class TimesNode extends ArithmeticExpNode {
     }
 
     public void codeGen() {
-    	//TODO
+    	Codegen.p.write("\t\t# Subtracting ints\n");
+    	myExp1.codeGen();
+    	myExp2.codeGen();
+    	Codegen.genPop(Codegen.T1);
+    	Codegen.genPop(Codegen.T0);
+    	Codegen.generate("mult", Codegen.T0, Codegen.T1);
+    	Codegen.generate("mflo", Codegen.T0);
+    	Codegen.genPush(Codegen.T0);
     }
     
     public void unparse(PrintWriter p, int indent) {
@@ -2490,7 +2522,14 @@ class DivideNode extends ArithmeticExpNode {
     }
     
     public void codeGen() {
-    	//TODO
+    	Codegen.p.write("\t\t# Subtracting ints\n");
+    	myExp1.codeGen();
+    	myExp2.codeGen();
+    	Codegen.genPop(Codegen.T1);
+    	Codegen.genPop(Codegen.T0);
+    	Codegen.generate("div", Codegen.T0, Codegen.T1);
+    	Codegen.generate("mflo", Codegen.T0);
+    	Codegen.genPush(Codegen.T0);
     }
     
     public void unparse(PrintWriter p, int indent) {

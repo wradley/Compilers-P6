@@ -12,12 +12,6 @@ void main()
     globalInt2 = 5555;
     globalBool = true;
 
-       // cout << globalInt;
-       // cout << globalInt2;
-       // cout << globalInt;
-        cout << x;
-        cout << z;
-       // cout << "Whelan needs to use eclipse cuz he sucks at coding\n";
-
-    
+    cout << 12 * 12;
+    cout << 4 / 2;
 }

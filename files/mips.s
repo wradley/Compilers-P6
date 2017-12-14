@@ -84,7 +84,19 @@ __start:
 	addu  $sp, $sp, 4
 	sw    $t1, 0($t0)	#Storing RHS value in LHS address
 		# Assignment End
-	lw    $t0, -12($fp)
+		# Subtracting ints
+	li    $t0, 12
+	sw    $t0, 0($sp)	#PUSH
+	subu  $sp, $sp, 4
+	li    $t0, 12
+	sw    $t0, 0($sp)	#PUSH
+	subu  $sp, $sp, 4
+	lw    $t1, 4($sp)	#POP
+	addu  $sp, $sp, 4
+	lw    $t0, 4($sp)	#POP
+	addu  $sp, $sp, 4
+	mult  $t0, $t1
+	mflo  $t0
 	sw    $t0, 0($sp)	#PUSH
 	subu  $sp, $sp, 4
 	lw    $a0, 4($sp)	#POP
@@ -92,7 +104,19 @@ __start:
 #Syscall for writing ints
 	li    $v0, 1
 	syscall
-	lw    $t0, -8($fp)
+		# Subtracting ints
+	li    $t0, 4
+	sw    $t0, 0($sp)	#PUSH
+	subu  $sp, $sp, 4
+	li    $t0, 2
+	sw    $t0, 0($sp)	#PUSH
+	subu  $sp, $sp, 4
+	lw    $t1, 4($sp)	#POP
+	addu  $sp, $sp, 4
+	lw    $t0, 4($sp)	#POP
+	addu  $sp, $sp, 4
+	div   $t0, $t1
+	mflo  $t0
 	sw    $t0, 0($sp)	#PUSH
 	subu  $sp, $sp, 4
 	lw    $a0, 4($sp)	#POP
