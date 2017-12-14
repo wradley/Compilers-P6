@@ -1,17 +1,17 @@
-int globalInt;
-int globalInt2;
-bool globalBool;
-
 void main()
 {
-    int z;
-    int x;
-    z = 53;
-    x = 17;
-    globalInt = 2001;
-    globalInt2 = 5555;
-    globalBool = true;
+    int a;
+    int b;
 
-    cout << 12 * 12;
-    cout << 4 / 2;
+    a = 10;
+    b = 20;
+
+    cout << "Everything should be false\n";
+
+    cout << a > b;
+    cout << a >= b;
+    cout << b < a;
+    cout << b <= a;
+    cout << a <= a - 1;
+    cout << b >= b + 1;
 }

@@ -659,7 +659,6 @@ class FnDeclNode extends DeclNode {
             Codegen.genPush(Codegen.RA);
             Codegen.genPush(Codegen.FP);
             Codegen.generate("addu", Codegen.FP, Codegen.SP, 8);
-	    System.out.println(((FnSym)myId.sym()).getTotalSize());
             Codegen.generate("subu", Codegen.SP, Codegen.SP, ((FnSym)myId.sym()).getTotalSize());
 
             Codegen.p.write("\t\t# Main Body\n");
@@ -1127,12 +1126,16 @@ class WriteStmtNode extends StmtNode {
     public void codeGen() {
     	myExp.codeGen();
     	Codegen.genPop(Codegen.A0);
+    	if(expType.isBoolType()) {
+		    Codegen.p.write("#Syscall for writing bools\n");
+    		Codegen.generate("li", Codegen.V0, 1);
+    	}
     	if(expType.isIntType()) {
-		Codegen.p.write("#Syscall for writing ints\n");
-    		Codegen.generate("li",Codegen.V0, 1);
+		    Codegen.p.write("#Syscall for writing ints\n");
+    		Codegen.generate("li", Codegen.V0, 1);
     	}
     	if(expType.isStringType()) {
-		Codegen.p.write("#Syscall for writing strings\n");
+		    Codegen.p.write("#Syscall for writing strings\n");
     		Codegen.generate("li", Codegen.V0, 4);
     	}
     	Codegen.generate("syscall");
@@ -1572,6 +1575,7 @@ class StringLitNode extends ExpNode {
     public void codeGen() {
     	String myLabel;
     	
+    	
     	if (myStringLits.get(myStrVal) != null) {
     	    myLabel = myStringLits.get(myStrVal);
     	}
@@ -1579,15 +1583,13 @@ class StringLitNode extends ExpNode {
     	else {
     	    myLabel = Codegen.nextLabel();
     	    myStringLits.put(myStrVal, myLabel);
+    	    Codegen.generate(".data");
+        	Codegen.generateLabeled(myLabel, ".asciiz", "Storing a string literal", myStrVal);
+        	Codegen.generate(".text");
     	}
     	
-    	Codegen.generate(".data");
-    	Codegen.generateLabeled(myLabel, ".asciiz", "Storing a string literal", myStrVal);
-    	
-    	Codegen.generate(".text");
     	Codegen.generateWithComment("la", "Pushing address of string literal on the stack", Codegen.T0, myLabel);
     	Codegen.genPush(Codegen.T0);
-    	
     }
     
     public void unparse(PrintWriter p, int indent) {
@@ -2497,7 +2499,7 @@ class TimesNode extends ArithmeticExpNode {
     }
 
     public void codeGen() {
-    	Codegen.p.write("\t\t# Subtracting ints\n");
+    	Codegen.p.write("\t\t# Multiplying ints\n");
     	myExp1.codeGen();
     	myExp2.codeGen();
     	Codegen.genPop(Codegen.T1);
@@ -2522,7 +2524,7 @@ class DivideNode extends ArithmeticExpNode {
     }
     
     public void codeGen() {
-    	Codegen.p.write("\t\t# Subtracting ints\n");
+    	Codegen.p.write("\t\t# Dividing ints\n");
     	myExp1.codeGen();
     	myExp2.codeGen();
     	Codegen.genPop(Codegen.T1);
@@ -2547,7 +2549,22 @@ class AndNode extends LogicalExpNode {
     }
     
     public void codeGen() {
-    	//TODO
+        Codegen.p.write("\t\t# AND\n");
+    	myExp1.codeGen();
+    	myExp2.codeGen();
+    	Codegen.genPop(Codegen.T1);
+    	Codegen.genPop(Codegen.T0);
+    	Codegen.generate("add", Codegen.T0, Codegen.T0, Codegen.T1); // add the two booleans together
+    	Codegen.generate("li", Codegen.T1, 2);
+    	String trueLabel = Codegen.nextLabel();
+    	String finishLabel = Codegen.nextLabel();
+    	Codegen.generate("beq", Codegen.T0, Codegen.T1, trueLabel); // check if it equals 2
+    	Codegen.generate("li", Codegen.T1, 0); // if the value was not two (false), load 0 into t1
+    	Codegen.generate("b", finishLabel);
+    	Codegen.genLabel(trueLabel, "if the value was true");
+    	Codegen.generate("li", Codegen.T1, 1); // if the value was two (true), load 1 into t1
+    	Codegen.genLabel(finishLabel, "push either t/f onto the stack");
+    	Codegen.genPush(Codegen.T1);
     }
     
     public void unparse(PrintWriter p, int indent) {
@@ -2565,7 +2582,36 @@ class OrNode extends LogicalExpNode {
     }
     
     public void codeGen() {
-    	//TODO
+    	Codegen.p.write("\t\t# OR\n");
+    	
+    	// generate a true and finish label
+    	String trueLabel = Codegen.nextLabel();
+    	String finishLabel = Codegen.nextLabel();
+    	
+    	// load a 1 into T1
+        Codegen.generate("li", Codegen.T1, 1);
+    	
+    	// check the first expression (if it's 1, jump to true)
+    	myExp1.codeGen();
+    	Codegen.genPop(Codegen.T0);
+    	Codegen.generate("beq", Codegen.T0, Codegen.T1, trueLabel);
+    	
+    	// check the second expression (if it's 1, jump to true)
+    	myExp2.codeGen();
+    	Codegen.genPop(Codegen.T0);
+    	Codegen.generate("beq", Codegen.T0, Codegen.T1, trueLabel);
+    	
+    	// if it falls into the false section
+    	Codegen.generate("li", Codegen.T1, 0); // load 0 into t1
+    	Codegen.generate("b", finishLabel); // jump to the finish
+    	
+    	// true section
+    	Codegen.genLabel(trueLabel, "True section");
+    	Codegen.generate("li", Codegen.T1, 1); // load 1 into t1
+    	
+    	// finish section
+    	Codegen.genLabel(finishLabel, "Finish section");
+    	Codegen.genPush(Codegen.T1); // push T1
     }
     
     public void unparse(PrintWriter p, int indent) {
@@ -2619,7 +2665,30 @@ class LessNode extends RelationalExpNode {
     }
     
     public void codeGen() {
-    	//TODO
+    	Codegen.p.write("\t\t# Less than\n");
+    	
+    	// generate a true and finish label
+    	String trueLabel = Codegen.nextLabel();
+    	String finishLabel = Codegen.nextLabel();
+    	
+    	// if a < b then jump to true section, else fall into false section
+    	myExp1.codeGen();
+    	myExp2.codeGen();
+    	Codegen.genPop(Codegen.T1);
+    	Codegen.genPop(Codegen.T0);
+    	Codegen.generate("blt", Codegen.T0, Codegen.T1, trueLabel);
+    	
+    	// if it falls into the false section
+    	Codegen.generate("li", Codegen.T1, 0); // load 0 into t1
+    	Codegen.generate("b", finishLabel); // jump to the finish
+    	
+    	// true section
+    	Codegen.genLabel(trueLabel, "True section");
+    	Codegen.generate("li", Codegen.T1, 1); // load 1 into t1
+    	
+    	// finish section
+    	Codegen.genLabel(finishLabel, "Finish section");
+    	Codegen.genPush(Codegen.T1); // push T1
     }
     public void unparse(PrintWriter p, int indent) {
         p.print("(");
@@ -2636,7 +2705,30 @@ class GreaterNode extends RelationalExpNode {
     }
     
     public void codeGen() {
-    	//TODO
+    	Codegen.p.write("\t\t# Greater than\n");
+    	
+    	// generate a true and finish label
+    	String trueLabel = Codegen.nextLabel();
+    	String finishLabel = Codegen.nextLabel();
+    	
+    	// if a > b then jump to true section, else fall into false section
+    	myExp1.codeGen();
+    	myExp2.codeGen();
+    	Codegen.genPop(Codegen.T1);
+    	Codegen.genPop(Codegen.T0);
+    	Codegen.generate("bgt", Codegen.T0, Codegen.T1, trueLabel);
+    	
+    	// if it falls into the false section
+    	Codegen.generate("li", Codegen.T1, 0); // load 0 into t1
+    	Codegen.generate("b", finishLabel); // jump to the finish
+    	
+    	// true section
+    	Codegen.genLabel(trueLabel, "True section");
+    	Codegen.generate("li", Codegen.T1, 1); // load 1 into t1
+    	
+    	// finish section
+    	Codegen.genLabel(finishLabel, "Finish section");
+    	Codegen.genPush(Codegen.T1); // push T1
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -2654,7 +2746,30 @@ class LessEqNode extends RelationalExpNode {
     }
 
     public void codeGen() {
-    	//TODO
+    	Codegen.p.write("\t\t# Less than or equals\n");
+    	
+    	// generate a true and finish label
+    	String trueLabel = Codegen.nextLabel();
+    	String finishLabel = Codegen.nextLabel();
+    	
+    	// if a <= b then jump to true section, else fall into false section
+    	myExp1.codeGen();
+    	myExp2.codeGen();
+    	Codegen.genPop(Codegen.T1);
+    	Codegen.genPop(Codegen.T0);
+    	Codegen.generate("ble", Codegen.T0, Codegen.T1, trueLabel);
+    	
+    	// if it falls into the false section
+    	Codegen.generate("li", Codegen.T1, 0); // load 0 into t1
+    	Codegen.generate("b", finishLabel); // jump to the finish
+    	
+    	// true section
+    	Codegen.genLabel(trueLabel, "True section");
+    	Codegen.generate("li", Codegen.T1, 1); // load 1 into t1
+    	
+    	// finish section
+    	Codegen.genLabel(finishLabel, "Finish section");
+    	Codegen.genPush(Codegen.T1); // push T1
     }
     
     public void unparse(PrintWriter p, int indent) {
@@ -2672,7 +2787,31 @@ class GreaterEqNode extends RelationalExpNode {
     }
     
     public void codeGen() {
-    	//TODO
+        Codegen.p.write("\t\t# Greater than or equals\n");
+    	
+    	// generate a true and finish label
+    	String trueLabel = Codegen.nextLabel();
+    	String finishLabel = Codegen.nextLabel();
+    	
+    	
+    	// if a >= b then jump to true section, else fall into false section
+    	myExp1.codeGen();
+    	myExp2.codeGen();
+    	Codegen.genPop(Codegen.T1);
+    	Codegen.genPop(Codegen.T0);
+    	Codegen.generate("bge", Codegen.T0, Codegen.T1, trueLabel);
+    	
+    	// if it falls into the false section
+    	Codegen.generate("li", Codegen.T1, 0); // load 0 into t1
+    	Codegen.generate("b", finishLabel); // jump to the finish
+    	
+    	// true section
+    	Codegen.genLabel(trueLabel, "True section");
+    	Codegen.generate("li", Codegen.T1, 1); // load 1 into t1
+    	
+    	// finish section
+    	Codegen.genLabel(finishLabel, "Finish section");
+    	Codegen.genPush(Codegen.T1); // push T1
     }
 
     public void unparse(PrintWriter p, int indent) {
