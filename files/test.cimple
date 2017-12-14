@@ -1,17 +1,7 @@
+
+
 void main()
 {
-    int a;
-    int b;
-
-    a = 10;
-    b = 20;
-
-    cout << "Everything should be false\n";
-
-    cout << a > b;
-    cout << a >= b;
-    cout << b < a;
-    cout << b <= a;
-    cout << a <= a - 1;
-    cout << b >= b + 1;
+    cout << "This" != "This";
+    cout << "This" != "That";
 }
