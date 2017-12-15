@@ -1,12 +1,55 @@
+void clear()
+{
+    int i;
+    i = 0;
+    while (i < 100)
+    {
+        cout << "\n";
+        i++;
+    }
+}
+
+void drawArt()
+{
+    clear();
+    cout << "    :)\n\n\n\n";
+}
 
 void main()
 {
-    int i;
-    i = 10;
-    while (i > 0)
+    int input;
+    bool running;
+
+    running = true;
+    clear();
+    while (running)
     {
-        i--;
-        cout << i;
-        cout << "\n";
+        cout << "[1] Clear Screen\n";
+        cout << "[2] End Program\n";
+        cout << "[3] For Art\n";
+
+        cin >> input;
+
+        if (input != 0)
+        {
+            if (input == 1)
+            {
+                clear();
+            }
+
+            else
+            {
+                if (input == 2)
+                {
+                    clear();
+                    running = false;
+                }
+
+                else
+                {
+                    drawArt();
+                }
+            }
+        }
     }
 }
