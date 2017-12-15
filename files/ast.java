@@ -1006,8 +1006,15 @@ class PostIncStmtNode extends StmtNode {
     }
         
     public void codeGen() {
-    	//TODO
+    	((IdNode)myExp).genAddr();
+    	myExp.codeGen();
+    	Codegen.genPop(Codegen.T0);
+    	Codegen.generate("li", Codegen.T1, 1);
+    	Codegen.generate("add", Codegen.T0, Codegen.T1, Codegen.T0);
+    	Codegen.genPop(Codegen.T1);
+    	Codegen.generateIndexed("sw", Codegen.T0, Codegen.T1, 0);
     }
+    
     public void unparse(PrintWriter p, int indent) {
         doIndent(p, indent);
         myExp.unparse(p, 0);
@@ -1044,7 +1051,13 @@ class PostDecStmtNode extends StmtNode {
     }
         
     public void codeGen() {
-    	//TODO
+    	((IdNode)myExp).genAddr();
+    	myExp.codeGen();
+    	Codegen.genPop(Codegen.T0);
+    	Codegen.generate("li", Codegen.T1, -1);
+    	Codegen.generate("add", Codegen.T0, Codegen.T1, Codegen.T0);
+    	Codegen.genPop(Codegen.T1);
+    	Codegen.generateIndexed("sw", Codegen.T0, Codegen.T1, 0);
     }
     
     public void unparse(PrintWriter p, int indent) {

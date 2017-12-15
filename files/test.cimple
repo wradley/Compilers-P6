@@ -1,25 +1,12 @@
-int func1() {
-    int a;
-    a = 10;
-    if(false) {
-        cout << a;
-        return a + 59;
-    }
-    return 96;
-}
 
-bool func2() {
-    return !false;
-}
-
-void func3(int a, int b, int c, int d) {
-    cout << a;
-    cout << b;
-    cout << c;
-    cout << d;
-}
 void main()
 {
-    int x;
-    func3(1, 2, 3, 4);
+    int i;
+    i = 10;
+    while (i > 0)
+    {
+        i--;
+        cout << i;
+        cout << "\n";
+    }
 }
