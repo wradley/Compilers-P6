@@ -108,7 +108,7 @@ import java.util.*;
 abstract class ASTnode { 
 	
 	static Hashtable<String, String> myStringLits = new Hashtable<String, String>();
-	
+	static String currentFunc = "main"; // Current func program is in
 	static boolean hasMain = false; // program has main function
 	protected int curOffset = 4;
 	
@@ -262,14 +262,14 @@ class FormalsListNode extends ASTnode {
      */
     public List<Type> nameAnalysis(SymTable symTab) {
         List<Type> typeList = new LinkedList<Type>();
-        int i = 1; 
+        int i = length(); // length of formal list 
         for (FormalDeclNode node : myFormals) {
             SemSym sym = node.nameAnalysis(symTab);
             if (sym != null) {
             	sym.setOffset(i * 4); 
                 typeList.add(sym.getType());
             }
-            i++;
+            i--;
         }
         
         return typeList;
@@ -421,6 +421,11 @@ class ExpListNode extends ASTnode {
         }
     }
     
+    public void codeGen() {
+    	for (ExpNode node : myExps) {
+            node.codeGen();
+        }
+    }
     public void unparse(PrintWriter p, int indent) {
         Iterator<ExpNode> it = myExps.iterator();
         if (it.hasNext()) { // if there is at least one element
@@ -434,6 +439,7 @@ class ExpListNode extends ASTnode {
 
     // list of kids (ExpNodes)
     private List<ExpNode> myExps;
+
 }
 
 // **********************************************************************
@@ -677,7 +683,25 @@ class FnDeclNode extends DeclNode {
         
         // for any other function
         else {
+        	currentFunc = myId.name();
             Codegen.genLabel("_" + myId.name());
+            Codegen.p.write("\t\t# Entering Funtion " + myId.name() + "\n");
+            Codegen.genPush(Codegen.RA);
+            Codegen.genPush(Codegen.FP);
+            Codegen.generate("addu", Codegen.FP, Codegen.SP, 8);
+            Codegen.generate("subu", Codegen.SP, Codegen.SP, ((FnSym)myId.sym()).getTotalSize());
+
+            Codegen.p.write("\t\t# Function Body\n");
+            myBody.codeGen();
+            
+            // Exiting main
+            Codegen.p.write("\t\t# Exiting Function " + myId.name() + "\n");
+            Codegen.genLabel(myId.name() + "_end");
+            Codegen.generateIndexed("lw", Codegen.RA, Codegen.FP, 0);
+            Codegen.generate("move", Codegen.T0, Codegen.FP);
+            Codegen.generateIndexed("lw", Codegen.FP, Codegen.FP, -4);
+            Codegen.generate("move", Codegen.SP, Codegen.T0);
+            Codegen.generate("jr", Codegen.RA);
         } 
         
     }
@@ -1069,7 +1093,14 @@ class ReadStmtNode extends StmtNode {
     }
     
     public void codeGen() {
-    	//TODO
+    	Codegen.generate("li", Codegen.V0, 5);
+    	Codegen.generate("syscall");
+    	
+    	// Generate address of expression and put V0 there
+    	((IdNode)myExp).genAddr();
+    	Codegen.genPop(Codegen.T0);
+    	Codegen.generateIndexed("sw", Codegen.V0, Codegen.T0, 0);
+    	
     }
     
     public void unparse(PrintWriter p, int indent) {
@@ -1410,11 +1441,16 @@ class CallStmtNode extends StmtNode {
      * typeCheck
      */
     public void typeCheck(Type retType) {
+    	myType = retType;
         myCall.typeCheck();
     }
     
     public void codeGen() {
-    	//TODO
+    	myCall.codeGen();
+//    	if(myType.isVoidType()) {
+//    		// Pop "nothing" off stack if return type is void
+//    		Codegen.generate("addu", Codegen.SP, Codegen.SP, 4);
+//    	}
     }
     
     public void unparse(PrintWriter p, int indent) {
@@ -1425,6 +1461,7 @@ class CallStmtNode extends StmtNode {
 
     // 1 kid
     private CallExpNode myCall;
+    private Type myType;
 }
 
 class ReturnStmtNode extends StmtNode {
@@ -1470,7 +1507,12 @@ class ReturnStmtNode extends StmtNode {
     }
     
     public void codeGen() {
-    	//TODO
+    	if(myExp != null) {
+    		myExp.codeGen();
+    		Codegen.genPop(Codegen.V0);
+    	}
+   
+    	Codegen.generate("b", currentFunc + "_end");
     }
     
     public void unparse(PrintWriter p, int indent) {
@@ -1760,7 +1802,7 @@ class IdNode extends ExpNode {
     }
      
     public void genJumpAndLink() {
-    	//TODO
+    	Codegen.generateWithComment("jal", "Jumping to function", "_" + myStrVal);
     }
     
     // Gets value of Id and pushes onto the stack
@@ -2118,7 +2160,11 @@ class CallExpNode extends ExpNode {
     }
      
     public void codeGen() {
-    	//TODO
+    	if(myExpList != null) {
+    		myExpList.codeGen();
+    	}
+    	myId.genJumpAndLink();
+    	Codegen.genPush(Codegen.V0);
     }
     
     // ** unparse **

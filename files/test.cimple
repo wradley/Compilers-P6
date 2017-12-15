@@ -1,7 +1,25 @@
+int func1() {
+    int a;
+    a = 10;
+    if(false) {
+        cout << a;
+        return a + 59;
+    }
+    return 96;
+}
 
+bool func2() {
+    return !false;
+}
 
+void func3(int a, int b, int c, int d) {
+    cout << a;
+    cout << b;
+    cout << c;
+    cout << d;
+}
 void main()
 {
-    cout << "This" != "This";
-    cout << "This" != "That";
+    int x;
+    func3(1, 2, 3, 4);
 }
