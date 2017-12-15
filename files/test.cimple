@@ -1,3 +1,134 @@
+
+void testIntParams(int a, int b, int c) {
+    cout << "\n69 should appear \n";
+    cout << a;
+    cout << "\n4761 should appear \n";
+    cout << b;
+    cout << "\n70 should appear \n";
+    cout << c;
+    a = b / a - c;
+    cout << "\n-1 should appear \n";
+    cout << a;
+}
+
+void testBoolParams(bool a, bool b) {
+    cout << "\n0 should appear\n";
+    cout << a;
+    cout << "\n1 should appear\n";
+    cout << b;
+}
+
+void testMixedParams(int a, bool b, int c) {
+    if(b) {
+        cout << "\n3 should appear \n";
+        cout << a + c;
+    }
+}
+
+void testLocalsAndParams(int a, int b) {
+    int c;
+    int d;
+    c = a;
+    c++;
+    if(c == a) {
+        cout << "\nTHIS SHOULD NOT APPEAR 3.0\n";
+    }
+    d = b;
+    cout << "\n18 should appear\n";
+    cout << b;
+
+}
+
+void testHellaLocals() {
+    int a; 
+    bool b;
+    int c;
+
+    a = 10;
+    c = 59;
+    b = true;
+
+    while(b) {
+        cout << "\n69 should appear here\n";
+        cout << a + c;
+        b = false;
+    }
+}
+
+void testShortCircuit() {
+    cout << "LOOK NEAR THIS STRING IN MIPS TO SEE IF SHORT CIRCUITED \n";
+    if(true || false) {
+        cout << "\ngood ops hahah lol lmfao\n";
+    }
+    if(false && true) {
+        cout << "\nRUH ROH\n";
+    }
+    if(true && false) {
+        // to see if any changes in short circuit
+    }
+
+    if(true) {
+        cout << "\nWent in if statement - GOOD!\n";
+    }
+    else {
+        int a;
+        a = 69;
+        cout << "\nTHIS SHOULD NOT APPEAR, NOR SHOULD A 69 AFTER\n";
+        cout << a;
+    }
+}
+
+bool testBoolReturn() {
+    bool b;
+    b = false;
+    return false;
+}
+
+int testIntReturn() {
+    int x;
+    x = 69;
+    return x;
+}
+
+void testNoReturn() {
+    int a;
+    a = 10;
+    if(false) {
+        cout << "\nTHIS SHOULD NOT APPEAR 2.0\n";
+    }
+}
+void testEarlyReturn() {
+    // do a bunch of nothing
+    int a;
+    a = 10;
+    return;
+    cout << "\nTHIS SHOULD NOT APPEAR\n";
+}
+
+void test() {
+    int a;
+    bool b;
+
+    testNoReturn();
+    testEarlyReturn();
+    a = testIntReturn();
+    b = testBoolReturn();
+    testIntParams(a, a * a, a + 1);
+    testBoolParams(true && false, true || false);
+    testMixedParams(1, true, 2);
+    testLocalsAndParams(1, 18);
+    testHellaLocals();
+    testShortCircuit();
+
+    cout << "\n69 should appear :)\n";
+    cout << a;
+    cout << "\n4761 should appear \n";
+    a = a * 69;
+    cout << a;
+    
+    return;
+}
+
 void clear()
 {
     int i;
@@ -27,6 +158,7 @@ void main()
         cout << "[1] Clear Screen\n";
         cout << "[2] End Program\n";
         cout << "[3] For Art\n";
+        cout << "[4] To Test\n";
 
         cin >> input;
 
@@ -47,7 +179,13 @@ void main()
 
                 else
                 {
-                    drawArt();
+                    if( input == 3) {
+                         drawArt();
+                    }
+                    else {
+
+                        test();                        
+                    }
                 }
             }
         }

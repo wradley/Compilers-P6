@@ -69,3 +69,4 @@ clean:
 ###
 cleantest:
 	rm -f *.out
+	rm -f *.s
